@@ -64,23 +64,28 @@ public class TwitterFilterSpout extends BaseRichSpout {
 			}
 
 			@Override
-			public void onDeletionNotice(StatusDeletionNotice sdn) {
+			public void onDeletionNotice(StatusDeletionNotice statusDeletionNotice) {
+				System.out.println("onDeletionNotice: " + statusDeletionNotice.getStatusId());
 			}
 
 			@Override
-			public void onTrackLimitationNotice(int i) {
+			public void onTrackLimitationNotice(int numberOfLimitedStatuses) {
+				System.out.println("onTrackLimitationNotice: " + Integer.toString(numberOfLimitedStatuses));
 			}
 
 			@Override
-			public void onScrubGeo(long l, long l1) {
+			public void onScrubGeo(long userId, long upToStatusId) {
+				System.out.println("onScrubGeo");
 			}
 
 			@Override
 			public void onStallWarning(StallWarning stallWarning) {
+				System.out.println("onStallWarning: " + stallWarning.getMessage());
 			}
 
 			@Override
 			public void onException(Exception e) {
+				System.out.println("onException: " + e.getMessage());
 			}
 		};
 
