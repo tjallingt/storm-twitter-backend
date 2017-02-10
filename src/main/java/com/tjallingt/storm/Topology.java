@@ -3,6 +3,7 @@ package com.tjallingt.storm;
 import org.apache.storm.Config;
 import org.apache.storm.LocalCluster;
 import org.apache.storm.topology.TopologyBuilder;
+import org.apache.storm.tuple.Fields;
 
 /**
  * Topology class that sets up the Storm topology for this sample.
@@ -19,11 +20,31 @@ public class Topology {
 		config.setMessageTimeoutSecs(120);
 
 		// http://stackoverflow.com/questions/31851311/how-to-send-output-of-two-different-spout-to-the-same-bolt
+
 		TopologyBuilder b = new TopologyBuilder();
-		b.setSpout("TwitterFilterSpout", new TwitterFilterSpout());
-		b.setSpout("RedisSubSpout", new RedisSubSpout("update-cache"));
-		b.setBolt("BlacklistBolt", new BlacklistBolt()).shuffleGrouping("TwitterFilterSpout").shuffleGrouping("RedisSubSpout");
-		b.setBolt("RedisStoreBolt", new TweetStoreBolt()).shuffleGrouping("BlacklistBolt");
+		//b.setSpout("TwitterSpout", new TwitterFilterSpout());
+		b.setSpout("TwitterSpout", new TwitterLineSpout("linespout.data", 1000));
+		b.setSpout("RedisSpout", new RedisSubSpout("update-cache"));
+
+		// filters receive data from redis and twitter
+		b.setBolt("StatusFilterBolt", new StatusFilterBolt())
+				.shuffleGrouping("TwitterSpout")
+				.shuffleGrouping("RedisSpout");
+		b.setBolt("BlacklistBolt", new BlacklistBolt())
+				.shuffleGrouping("TwitterSpout")
+				.shuffleGrouping("RedisSpout");
+
+		// join filter data
+		b.setBolt("FilterJoinBolt", new FilterJoinBolt())
+				.fieldsGrouping("StatusFilterBolt", new Fields("id"))
+				.fieldsGrouping("BlacklistBolt", new Fields("id"));
+
+
+		// receive data from filters
+		b.setBolt("KeywordAnalysisBolt", new KeywordAnalysisBolt()).shuffleGrouping("FilterJoinBolt");
+
+		// store filter data
+		b.setBolt("RedisStoreBolt", new TweetStoreBolt()).shuffleGrouping("FilterJoinBolt");
 
 		final LocalCluster cluster = new LocalCluster();
 		cluster.submitTopology(TOPOLOGY_NAME, config, b.createTopology());

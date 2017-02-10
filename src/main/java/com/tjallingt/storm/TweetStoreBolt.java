@@ -11,23 +11,37 @@ import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Transaction;
 
+import java.util.ArrayList;
+
 class TweetStoreBolt extends BaseBasicBolt {
-	private final String listKey = "tweetList";
 	private final String host = "localhost";
 	private transient JedisPool pool;
 	private int storedTweets = 0;
-	private int tweetListSize = 50;
 	private static final Logger logger = LoggerFactory.getLogger(TweetStoreBolt.class);
 
 	@Override
 	public void execute(Tuple tuple, BasicOutputCollector collector) {
-		String json = (String) tuple.getValueByField("json");
-		logger.info("Storing tweet: " + Integer.toString(++storedTweets));
+		String json = tuple.getStringByField("json");
+		ArrayList<String> filters = (ArrayList<String>) tuple.getValueByField("filters");
+		String listKey;
+		int listSize;
+		if (filters.size() > 0) {
+			listKey = "filterList";
+			listSize = 10;
+
+			json = json.substring(0, json.length() - 1);
+			json += ",\"filters\": [\"" + String.join("\",\"", filters) + "\"]}";
+		} else {
+			listKey = "tweetList";
+			listSize = 50;
+		}
+
+		//logger.info("Storing tweet: " + Integer.toString(++storedTweets) + " in " + listKey);
 		try (Jedis jedis = getPoolResource()){
 			// make sure to execute adding and trimming at the same time
 			Transaction transaction = jedis.multi();
 			transaction.lpush(listKey, json);
-			transaction.ltrim(listKey, 0, tweetListSize - 1);
+			transaction.ltrim(listKey, 0, listSize - 1);
 			transaction.exec();
 		}
 	}

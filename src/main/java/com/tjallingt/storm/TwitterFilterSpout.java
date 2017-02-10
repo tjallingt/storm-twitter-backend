@@ -113,9 +113,9 @@ public class TwitterFilterSpout extends BaseRichSpout {
 		FilterQuery filter = new FilterQuery();
 		try (Jedis jedis = getPoolResource()) {
 			String[] track = jedis.smembers("settings:filter:track").stream().toArray(String[]::new);
-			//long[] follow = jedis.smembers("settings:filter:follow").stream().mapToLong(Long::parseLong).toArray();
+			long[] follow = jedis.smembers("settings:filter:follow").stream().mapToLong(Long::parseLong).toArray();
 			filter.track(track);
-			//filter.follow(follow);
+			filter.follow(follow);
 			// TODO: add language/location
 		}
 		twitterStream.filter(filter);

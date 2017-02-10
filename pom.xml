@@ -8,16 +8,17 @@
   <name>Storm Twitter</name>
 
   <dependencies>
+	  <!--
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
         <version>1.7.19</version>
     </dependency>
-    <dependency> 
+    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-log4j12</artifactId>
         <version>1.7.19</version>
-    </dependency>
+    </dependency>-->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -42,7 +43,7 @@
       <groupId>org.apache.storm</groupId>
       <artifactId>storm-core</artifactId>
       <version>1.0.2</version>
-      <scope>provided</scope>
+      <!--<scope>provided</scope>-->
     </dependency>
 	  <dependency>
 		  <groupId>redis.clients</groupId>
