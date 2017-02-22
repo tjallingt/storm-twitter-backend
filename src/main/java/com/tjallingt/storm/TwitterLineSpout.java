@@ -51,7 +51,7 @@ public class TwitterLineSpout extends BaseRichSpout {
 
 			if (json != null) {
 				Status status = TwitterObjectFactory.createStatus(json);
- 				collector.emit(new Values(status.getId(), status, json, new ArrayList<String>()));
+ 				collector.emit(new Values(status.getId(), status, json));
 				Thread.sleep((long)(Math.random() * maxsleep)); // randomly sleep for up to 1 second
 			} else {
 				logger.info("reached apparent end of file, reloading file");
@@ -89,7 +89,7 @@ public class TwitterLineSpout extends BaseRichSpout {
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("id", "status", "json", "filters"));
+		declarer.declare(new Fields("id", "status", "json"));
 	}
 
 }

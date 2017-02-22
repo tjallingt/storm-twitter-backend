@@ -46,7 +46,8 @@ public class BlacklistBolt extends BaseBasicBolt {
 
 		Status status = (Status) tuple.getValueByField("status");
 		String json = tuple.getStringByField("json");
-		ArrayList<String> filters = (ArrayList<String>) tuple.getValueByField("filters");
+		ArrayList<String> filters = new ArrayList<>();
+
 		Status checkStatus = status;
 
 		// TODO: should check regular status?

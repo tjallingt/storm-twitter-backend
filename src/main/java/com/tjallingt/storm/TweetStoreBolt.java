@@ -26,17 +26,17 @@ class TweetStoreBolt extends BaseBasicBolt {
 		String listKey;
 		int listSize;
 		if (filters.size() > 0) {
-			listKey = "filterList";
+			listKey = "data:tweets:removed";
 			listSize = 10;
 
 			json = json.substring(0, json.length() - 1);
 			json += ",\"filters\": [\"" + String.join("\",\"", filters) + "\"]}";
 		} else {
-			listKey = "tweetList";
-			listSize = 50;
+			listKey = "data:tweets:filtered";
+			listSize = 25;
 		}
 
-		//logger.info("Storing tweet: " + Integer.toString(++storedTweets) + " in " + listKey);
+		logger.info("Storing tweet: " + Integer.toString(++storedTweets) + " in " + listKey);
 		try (Jedis jedis = getPoolResource()){
 			// make sure to execute adding and trimming at the same time
 			Transaction transaction = jedis.multi();

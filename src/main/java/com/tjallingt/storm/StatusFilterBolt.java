@@ -14,13 +14,16 @@ import twitter4j.Status;
 
 import java.util.ArrayList;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class StatusFilterBolt extends BaseBasicBolt {
 	private static final org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(StatusFilterBolt.class);
 	private final String host = "localhost";
 	private transient JedisPool pool;
-	private boolean filterRetweet;
+	private boolean filterRetweets;
 	private boolean filterSensitive;
+	private Set<String> whitelistedLanguages;
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext context) {
@@ -43,23 +46,34 @@ public class StatusFilterBolt extends BaseBasicBolt {
 
 		Status status = (Status) tuple.getValueByField("status");
 		String json = tuple.getStringByField("json");
-		ArrayList<String> filters = (ArrayList<String>) tuple.getValueByField("filters");
+		ArrayList<String> filters = new ArrayList<>();
 
-		if (filterRetweet && status.isRetweet()) {
-			filters.add("filter:retweet");
+		if(isWhitelistedLanguage(status) == false) {
+			filters.add("status:languages");
+		}
+
+		if (filterRetweets && status.isRetweet()) {
+			filters.add("status:retweets");
 		}
 
 		if (filterSensitive && status.isPossiblySensitive()) {
-			filters.add("filter:sensitive");
+			filters.add("status:sensitive");
 		}
 
 		collector.emit(new Values(status.getId(), status, json, filters));
 	}
 
+	public boolean isWhitelistedLanguage(Status status) {
+		// if there is nothing everything is whitelisted
+		if (whitelistedLanguages.size() == 0) return true;
+		return whitelistedLanguages.contains(status.getLang());
+	}
+
 	public void updateCache() {
 		try (Jedis jedis = getPoolResource()) {
-			filterRetweet = jedis.getbit("settings:filter:retweet", 0);
-			filterSensitive = jedis.getbit("settings:filter:sensitive", 0);
+			filterRetweets = jedis.getbit("settings:status:retweets", 0);
+			filterSensitive = jedis.getbit("settings:status:sensitive", 0);
+			whitelistedLanguages = jedis.smembers("settings:status:languages").stream().collect(Collectors.toSet());
 		}
 	}
 

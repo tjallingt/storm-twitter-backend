@@ -42,16 +42,12 @@ public class FilterJoinBolt extends BaseRichBolt {
 	@Override
 	public void execute(Tuple tuple) {
 		Long id = tuple.getLongByField("id");
-		Status status = (Status) tuple.getValueByField("status");
-		String json = tuple.getStringByField("json");
-
-		GlobalStreamId streamId = new GlobalStreamId(tuple.getSourceComponent(), tuple.getSourceStreamId());
-
 		Map<GlobalStreamId, Tuple> parts = pending.getIfPresent(id);
 		if (parts == null) {
 			parts = new HashMap<>();
 		}
 
+		GlobalStreamId streamId = tuple.getSourceGlobalStreamId();
 		if (parts.containsKey(streamId)) {
 			throw new RuntimeException("Received same side of single join twice");
 		}
@@ -61,18 +57,22 @@ public class FilterJoinBolt extends BaseRichBolt {
 		if (parts.size() < numSources) {
 			pending.put(id, parts);
 		} else {
-			pending.invalidate(id);
-
 			ArrayList<String> filters = new ArrayList<>();
 			for (Tuple part : parts.values()) {
-				filters.addAll((ArrayList<String>) part.getValueByField("filters"));
+				ArrayList<String> partFilters = (ArrayList<String>) part.getValueByField("filters");
+				filters.addAll(partFilters);
 			}
+
+			Status status = (Status) tuple.getValueByField("status");
+			String json = tuple.getStringByField("json");
 
 			collector.emit(new Values(status, json, filters));
 
 			for (Tuple part : parts.values()) {
 				collector.ack(part);
 			}
+
+			pending.invalidate(id);
 		}
 	}
 
